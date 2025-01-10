@@ -1,5 +1,6 @@
 [package]
 name = "picklebush"
+description = "find regexen that would match a given text"
 version = "0.1.0"
 edition = "2024"
 
