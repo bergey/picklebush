@@ -57,11 +57,9 @@ fn main() -> anyhow::Result<()> {
 
 fn load_regexen(directory: &str) -> anyhow::Result<Vec<Cucumber>> {
     let ripgrep = Command::new("rg")
-        .arg("And\\(/([^\\n]*)/")
+        .arg("And\\(/[^\\n]*/|^ *step +\"[^\\n]*\"")
         .arg("--only-matching")
         .arg("--line-number")
-        .arg("--replace")
-        .arg("$1")
         .arg(directory)
         .output()?;
     if !ripgrep.status.success() {
@@ -69,22 +67,37 @@ fn load_regexen(directory: &str) -> anyhow::Result<Vec<Cucumber>> {
         std::process::exit(1);
     }
 
+    let and_re = Regex::new("/(.*)/").unwrap();
+    let step_re = Regex::new("step +\"(.*)\"")?;
+    let colons_re = Regex::new(":[^ \\n]+")?;
+
     let mut regexen = Vec::new();
     for line in std::str::from_utf8(&ripgrep.stdout)?.lines() {
         // split on : allowing : to appear after the line number
         let mut colons = line.split(':');
         let file = colons.next().unwrap_or("no : in rg output").to_string();
         let line_number = colons.next().unwrap_or("only 1 : in rg output").to_string();
-        let regex = Regex::new(
-            colons
+        let regex_string = {
+            let s = colons
                 .remainder()
-                .ok_or(anyhow!("nothing after second : in rg output"))?,
-        )?;
-        regexen.push(Cucumber {
-            file,
-            line_number,
-            regex,
-        });
+                .ok_or(anyhow!("nothing after second : in rg output"))?;
+            if let Some('A') = s.chars().next() {
+                and_re.captures(s).unwrap()[1].to_string()
+            } else {
+                colons_re
+                    .replace_all(&step_re.captures(s).unwrap()[1], "[^ \\n]+")
+                    .to_string()
+            }
+        };
+        if let Ok(regex) = Regex::new(&regex_string) {
+            regexen.push(Cucumber {
+                file,
+                line_number,
+                regex,
+            });
+        } else {
+            eprintln!("could not parse as regex /{regex_string}/");
+        }
     }
 
     Ok(regexen)
@@ -95,5 +108,19 @@ fn match_text(regexen: &Vec<Cucumber>, text: &str) {
         if cuke.regex.is_match(text) {
             println!("{}::{}", cuke.file, cuke.line_number)
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn and_parse() {
+        let and_re = Regex::new("/(.*)/").unwrap();
+        let input = r#"And(/^\w+ do(es)? some other thing$/, () => {"#;
+        let expected = r#"^\w+ do(es)? some other thing$"#.to_string();
+        assert_eq!(and_re.captures(input).unwrap()[1], expected);
+        let _ = Regex::new(&expected).unwrap();
     }
 }
