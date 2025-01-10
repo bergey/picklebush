@@ -1,6 +1,6 @@
 # picklebush
 
-## memex --help
+## picklebush --help
 
 ```
 find regexen that would match a given text
