@@ -13,26 +13,28 @@ struct Args {
     step: String,
     #[arg(long = "debug")]
     debug: bool,
+    #[arg(long = "dir", short = 'd')]
+    directory: Option<String>,
 }
 
 struct Cucumber {
     file: String,
     line_number: String, // no reason to parse & then reassemble
-    regex: Regex,       // TODO parse it
+    regex: Regex,
 }
 
 fn main() -> anyhow::Result<()> {
     let start = time::Instant::now();
     let args = Args::parse();
 
-    let directory = "/Users/bergey/braze/platform/develop/dashboard";
+    // let directory = "/Users/bergey/braze/platform/develop/dashboard";
     let ripgrep = Command::new("rg")
         .arg("And\\(/([^\\n]*)/")
         .arg("--only-matching")
         .arg("--line-number")
         .arg("--replace")
         .arg("$1")
-        .arg(directory)
+        .arg(args.directory.as_deref().unwrap_or("."))
         .output()?;
     if !ripgrep.status.success() {
         eprintln!("{:?}", ripgrep);
