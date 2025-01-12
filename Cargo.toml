@@ -2,9 +2,15 @@
 name = "picklebush"
 description = "find regexen that would match a given text"
 version = "0.1.0"
+repository = "https://github.com/bergey/picklebush"
 edition = "2024"
 
 [dependencies]
 anyhow = "1.0.95"
 clap = { version = "4.0.29", features = ["derive"] }
 regex = "1.11.1"
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
