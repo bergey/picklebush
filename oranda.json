@@ -1,5 +1,10 @@
 {
-  "build": {
-    "path_prefix": "picklebush"
-  }
+    "build": {
+        "path_prefix": "picklebush"
+    },
+    "components": {
+        "artifacts": {
+            "cargo_dist": true
+        }
+    }
 }
