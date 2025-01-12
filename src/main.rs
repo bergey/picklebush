@@ -14,8 +14,8 @@ struct Args {
     text: Option<String>,
     #[arg(long = "debug")]
     debug: bool,
-    #[arg(long = "dir", short = 'd')]
-    directory: Option<String>,
+    #[arg(long = "dir", short = 'd', default_value=".")]
+    directory: String,
 }
 
 struct Cucumber {
@@ -28,7 +28,7 @@ fn main() -> anyhow::Result<()> {
     let start = time::Instant::now();
     let args = Args::parse();
 
-    let regexen = load_regexen(args.directory.as_deref().unwrap_or("."))?;
+    let regexen = load_regexen(&args.directory)?;
     let parsing_t = start.elapsed();
 
     match args.text {
