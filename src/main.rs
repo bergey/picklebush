@@ -3,6 +3,7 @@
 use anyhow::anyhow;
 use clap::Parser;
 use regex::Regex;
+use std::io;
 use std::process::Command;
 use std::time;
 
@@ -10,7 +11,7 @@ use std::time;
 #[command(author, version, about, long_about = None)]
 struct Args {
     #[command()]
-    text: String,
+    text: Option<String>,
     #[arg(long = "debug")]
     debug: bool,
     #[arg(long = "dir", short = 'd')]
@@ -30,11 +31,17 @@ fn main() -> anyhow::Result<()> {
     let regexen = load_regexen(args.directory.as_deref().unwrap_or("."))?;
     let parsing_t = start.elapsed();
 
-    for cuke in &regexen {
-        if cuke.regex.is_match(&args.text) {
-            println!("{}::{}", cuke.file, cuke.line_number)
+    match args.text {
+        Some(t) => match_text(&regexen, &t),
+        None => {
+            eprintln!("enter text to match against regex patterns");
+            let lines = io::stdin().lines();
+            for r_text in lines {
+                match_text(&regexen, &r_text.unwrap());
+            }
         }
     }
+
     let total_t = start.elapsed();
 
     if args.debug {
@@ -49,7 +56,7 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn load_regexen(directory: &str) -> anyhow::Result<Vec<Cucumber>> {
-        let ripgrep = Command::new("rg")
+    let ripgrep = Command::new("rg")
         .arg("And\\(/([^\\n]*)/")
         .arg("--only-matching")
         .arg("--line-number")
@@ -81,4 +88,12 @@ fn load_regexen(directory: &str) -> anyhow::Result<Vec<Cucumber>> {
     }
 
     Ok(regexen)
+}
+
+fn match_text(regexen: &Vec<Cucumber>, text: &str) {
+    for cuke in regexen {
+        if cuke.regex.is_match(text) {
+            println!("{}::{}", cuke.file, cuke.line_number)
+        }
+    }
 }
