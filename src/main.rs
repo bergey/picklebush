@@ -10,7 +10,7 @@ use std::time;
 #[command(author, version, about, long_about = None)]
 struct Args {
     #[command()]
-    step: String,
+    text: String,
     #[arg(long = "debug")]
     debug: bool,
     #[arg(long = "dir", short = 'd')]
@@ -27,14 +27,35 @@ fn main() -> anyhow::Result<()> {
     let start = time::Instant::now();
     let args = Args::parse();
 
-    // let directory = "/Users/bergey/braze/platform/develop/dashboard";
-    let ripgrep = Command::new("rg")
+    let regexen = load_regexen(args.directory.as_deref().unwrap_or("."))?;
+    let parsing_t = start.elapsed();
+
+    for cuke in &regexen {
+        if cuke.regex.is_match(&args.text) {
+            println!("{}::{}", cuke.file, cuke.line_number)
+        }
+    }
+    let total_t = start.elapsed();
+
+    if args.debug {
+        eprintln!("found {} matching regexen", regexen.len());
+        eprintln!(
+            "load & parsing {}ms total {}ms",
+            parsing_t.as_millis(),
+            total_t.as_millis(),
+        );
+    }
+    Ok(())
+}
+
+fn load_regexen(directory: &str) -> anyhow::Result<Vec<Cucumber>> {
+        let ripgrep = Command::new("rg")
         .arg("And\\(/([^\\n]*)/")
         .arg("--only-matching")
         .arg("--line-number")
         .arg("--replace")
         .arg("$1")
-        .arg(args.directory.as_deref().unwrap_or("."))
+        .arg(directory)
         .output()?;
     if !ripgrep.status.success() {
         eprintln!("{:?}", ripgrep);
@@ -58,22 +79,6 @@ fn main() -> anyhow::Result<()> {
             regex,
         });
     }
-    let parsing_t = start.elapsed();
 
-    for cuke in &regexen {
-        if cuke.regex.is_match(&args.step) {
-            println!("{}::{}", cuke.file, cuke.line_number)
-        }
-    }
-    let total_t = start.elapsed();
-
-    if args.debug {
-        eprintln!("found {} matching regexen", regexen.len());
-        eprintln!(
-            "load & parsing {}ms total {}ms",
-            parsing_t.as_millis(),
-            total_t.as_millis(),
-        );
-    }
-    Ok(())
+    Ok(regexen)
 }
