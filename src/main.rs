@@ -1,6 +1,6 @@
 #![feature(str_split_remainder)]
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use clap::Parser;
 use regex::Regex;
 use std::io;
@@ -14,7 +14,7 @@ struct Args {
     text: Option<String>,
     #[arg(long = "debug")]
     debug: bool,
-    #[arg(long = "dir", short = 'd', default_value=".")]
+    #[arg(long = "dir", short = 'd', default_value = ".")]
     directory: String,
 }
 
@@ -61,7 +61,8 @@ fn load_regexen(directory: &str) -> anyhow::Result<Vec<Cucumber>> {
         .arg("--only-matching")
         .arg("--line-number")
         .arg(directory)
-        .output()?;
+        .output()
+        .context("rg is not installed: https://github.com/BurntSushi/ripgrep")?;
     if !ripgrep.status.success() {
         eprintln!("{:?}", ripgrep);
         std::process::exit(1);
