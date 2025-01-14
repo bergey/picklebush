@@ -41,3 +41,10 @@ Options:
   -h, --help             Print help
   -V, --version          Print version
 ```
+
+## editor integration
+
+### [emacs](https://github.com/bergey/dotfiles/blob/trunk/emacs/bergey/picklebush.el#L1) 
+
+Binds M-. in `.feature` files to go to definition.  Uses `picklebush` interactive mode, keeping one `picklebush` process for each `--dir` argument.
+
